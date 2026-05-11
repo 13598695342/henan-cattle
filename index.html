@@ -252,13 +252,18 @@
 
             // 更新日期（精确到秒）
             const now = new Date();
-            const timeStr = now.getFullYear() + '年' +
-                (now.getMonth()+1).toString().padStart(2,'0') + '月' +
-                now.getDate().toString().padStart(2,'0') + '日 ' +
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1;
+            const day = now.getDate();
+            const weekOfMonth = Math.ceil(day / 7);
+            const timeStr =
+                year + '年' +
+                month.toString().padStart(2,'0') + '月' +
+                day.toString().padStart(2,'0') + '日 ' +
                 now.getHours().toString().padStart(2,'0') + ':' +
                 now.getMinutes().toString().padStart(2,'0') + ':' +
                 now.getSeconds().toString().padStart(2,'0');
-            document.getElementById('updateTime').textContent = `数据更新时间：${data.日期 || '未知'} ${timeStr}`;
+            document.getElementById('updateTime').textContent = `数据更新时间：${year}年${month}月第${weekOfMonth}周 ${timeStr}`;
 
             // 更新图表
             updateCharts();
