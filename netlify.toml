@@ -1,0 +1,5 @@
+[build]
+  publish = "."
+
+[deploy]
+  site = "dulcet-daifuku-4f5ffe"

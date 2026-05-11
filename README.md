@@ -1,51 +1,74 @@
-# 河南牛价行情 PWA
+# 河南牛价数据 PWA
 
-河南省牛业数据实时查看应用
+## 全自动部署设置
 
-## 功能
+### 方案：GitHub → Netlify 自动部署
 
-- 活牛、牛肉、羊肉、猪肉等畜产品价格
-- 价格走势图表
-- 河南省各地存栏量排名
-- 每周数据自动更新
-- 手机端适配
-- 离线缓存
+1. **设置 GitHub Actions 自动更新数据**
+2. **Netlify 连接到 GitHub，自动部署**
 
-## 数据来源
+### 步骤 1: 推送代码到 GitHub
 
-- 农业农村部
-- 中国农业信息网
-- 国家统计局
+代码已经在 GitHub: https://github.com/13598695342/henan-cattle
 
-## 更新数据
+### 步骤 2: 在 Netlify 设置自动部署
 
-### 方法1：运行更新脚本
+1. 打开 https://app.netlify.com/sites/dulcet-daifuku-4f5ffe/settings
+2. 找到 **Build & Deploy**
+3. **Continuous deployment** → **Build hooks**
+4. 点击 **Add build hook**
+5. 名称: `auto-deploy`
+6. 选择分支: `master`
+7. 保存
 
-1. 双击运行 `data_update.py`
-2. 自动从网络获取最新数据
-3. 重新部署到 Netlify
+### 步骤 3: 在 GitHub 设置定时更新
 
-### 方法2：手动更新
+1. 打开 https://github.com/13598695342/henan-cattle/actions
+2. 点击 **New workflow**
+3. 选择 **set up a workflow yourself**
+4. 复制以下内容:
 
-1. 修改 `data.json` 文件中的价格数据
-2. 重新部署到 Netlify
+```yaml
+name: Update Data and Deploy
 
-## 部署到 Netlify
+on:
+  schedule:
+    - cron: '0 1 * * 5'  # 每周五9点
+  workflow_dispatch:
 
-1. 打开 https://app.netlify.com/drop
-2. 拖入整个文件夹
-3. 自动生成网站链接
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - run: pip install requests beautifulsoup4
+      - run: python data_update.py
+      - uses: peter-evans/commit-from@v4
+        with:
+          commit-message: "自动更新数据 $(date)"
+```
 
-## 文件说明
+5. 点击 **Start commit**
 
-- `index.html` - 主页面
-- `data.json` - 价格数据
-- `data_update.py` - 数据更新脚本
-- `manifest.json` - PWA配置
-- `sw.js` - Service Worker
+### 步骤 4: 添加 Netlify 构建钩子
 
-## 使用方法
+1. 复制 Netlify 提供的构建钩子 URL
+2. 在 GitHub 仓库 → Settings → Secrets → Actions
+3. 添加 `NETLIFY_DEPLOY_HOOK` 密钥
 
-1. 手机浏览器打开网站
-2. 点击"添加到主屏幕"
-3. 即可像App一样使用
+4. 修改 workflow 添加:
+
+```yaml
+- name: Trigger Netlify Deploy
+  run: curl -X POST -d "" ${{ secrets.NETLIFY_DEPLOY_HOOK }}
+```
+
+---
+
+设置完成后，每周五9点会自动：
+1. 更新数据
+2. 推送到 GitHub
+3. Netlify 自动部署
