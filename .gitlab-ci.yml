@@ -1,0 +1,22 @@
+# 河南牛价数据自动更新 - Gitee CI
+
+# 定时任务：每周五早上9点（北京时间）
+cron: '0 1 * * 5'
+branch: master
+
+image: python:3.9-slim
+
+before_script:
+  - pip install requests beautifulsoup4 lxml
+
+script:
+  - python data_update.py
+
+artifacts:
+  paths:
+    - data.json
+    - index.html
+  expire_in: 1 week
+
+only:
+  - master
