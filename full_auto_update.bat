@@ -11,7 +11,7 @@ echo.
 
 cd /d "%~dp0"
 
-echo [1/5] Updating data...
+echo [1/6] Updating data...
 echo Started at: %time%
 python data_update.py
 if %errorlevel% neq 0 (
@@ -23,7 +23,7 @@ echo   Completed at: %time%
 echo   OK - Data updated!
 
 echo.
-echo [2/5] Commit to GitHub...
+echo [2/6] Commit to GitHub...
 echo Started at: %time%
 git add -A
 git commit -m "Auto update %date% %time%" 2>nul
@@ -35,7 +35,15 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo [3/5] Push to GitHub...
+echo [3/6] Setup SSH agent for GitHub...
+echo Started at: %time%
+start /b ssh-agent -s >nul 2>&1
+ssh-add %USERPROFILE%/.ssh/id_rsa >nul 2>&1
+echo   SSH agent ready
+echo   Completed at: %time%
+
+echo.
+echo [4/6] Push to GitHub...
 echo Started at: %time%
 git push origin master 2>nul
 if %errorlevel% neq 0 (
@@ -46,7 +54,7 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo [4/5] Push to Gitee...
+echo [5/6] Push to Gitee...
 echo Started at: %time%
 git push gitee master 2>nul
 if %errorlevel% neq 0 (
@@ -57,7 +65,7 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo [5/5] Finished!
+echo [6/6] Finished!
 echo Finished at: %time%
 echo.
 echo =========================================
