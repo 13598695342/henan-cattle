@@ -206,33 +206,54 @@
 
         // 价格历史（用于图表）
         const priceHistory = {
-            '活牛': [25.5, 26.3, 26.5, 26.8, 27.5, 27.92],
-            '牛肉': [68.5, 69.5, 70.0, 71.0, 72.0, 72.82]
+            '活牛': [25.5, 26.3, 26.5, 26.8, 27.5, 27.92, 28.16, 28.28],
+            '牛肉': [68.5, 69.5, 70.0, 71.0, 72.0, 72.82, 73.09, 73.24]
         };
 
         async function loadData() {
             try {
-                // 尝试从API获取数据
-                // 由于是静态网站，这里使用本地存储的数据
-                const cached = localStorage.getItem('cattleData');
-                const cachedTime = localStorage.getItem('cattleDataTime');
-
-                // 如果有缓存且不超过24小时，直接使用
-                if (cached && cachedTime) {
-                    const age = Date.now() - parseInt(cachedTime);
-                    if (age < 86400000) { // 24小时
-                        const data = JSON.parse(cached);
-                        updateUI(data);
+                // 先尝试从服务器获取最新数据
+                const response = await fetch('data.json?t=' + Date.now());
+                if (response.ok) {
+                    const jsonData = await response.json();
+                    if (jsonData.价格数据 && jsonData.价格数据.length > 0) {
+                        const latest = jsonData.价格数据[0];
+                        const serverData = {
+                            '活牛价格': latest.活牛价格 || defaultData.活牛价格,
+                            '牛肉价格': latest.牛肉价格 || defaultData.牛肉价格,
+                            '羊肉价格': latest.羊肉价格 || defaultData.羊肉价格,
+                            '猪肉价格': latest.猪肉价格 || defaultData.猪肉价格,
+                            '活牛同比': latest.活牛同比 || defaultData.活牛同比,
+                            '活牛环比': latest.活牛环比 || defaultData.活牛环比,
+                            '牛肉同比': latest.牛肉同比 || defaultData.牛肉同比,
+                            '牛肉环比': latest.牛肉环比 || defaultData.牛肉环比,
+                            '日期': latest.日期 || defaultData.日期
+                        };
+                        updateUI(serverData);
                         return;
                     }
                 }
 
-                // 使用默认数据
+                // 如果服务器获取失败，使用缓存
+                const cached = localStorage.getItem('cattleData');
+                if (cached) {
+                    const data = JSON.parse(cached);
+                    updateUI(data);
+                    return;
+                }
+
+                // 最后使用默认数据
                 updateUI(defaultData);
 
             } catch (error) {
                 console.error('加载数据失败:', error);
-                updateUI(defaultData);
+                // 尝试使用缓存
+                const cached = localStorage.getItem('cattleData');
+                if (cached) {
+                    updateUI(JSON.parse(cached));
+                } else {
+                    updateUI(defaultData);
+                }
             }
         }
 
@@ -278,7 +299,7 @@
             new Chart(document.getElementById('cowChart'), {
                 type: 'line',
                 data: {
-                    labels: ['2022', '2023', '2024初', '2024中', '2025', '现在'],
+                    labels: ['2022', '2023', '2024初', '2024中', '2025初', '5月第4周', '5月第1周', '5月第2周'],
                     datasets: [{
                         data: priceHistory['活牛'],
                         borderColor: '#27ae60',
@@ -300,7 +321,7 @@
             new Chart(document.getElementById('beefChart'), {
                 type: 'line',
                 data: {
-                    labels: ['2022', '2023', '2024初', '2024中', '2025', '现在'],
+                    labels: ['2022', '2023', '2024初', '2024中', '2025初', '5月第4周', '5月第1周', '5月第2周'],
                     datasets: [{
                         data: priceHistory['牛肉'],
                         borderColor: '#e74c3c',
