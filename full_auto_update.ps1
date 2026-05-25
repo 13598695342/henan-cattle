@@ -32,21 +32,23 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host ""
-Write-Host "[3/5] Push to GitHub..."
+Write-Host "[3/5] Sync GitHub..."
+git pull origin master --rebase 2>$null
 git push origin master 2>$null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  Warning: GitHub push failed"
 } else {
-    Write-Host "  OK - Pushed to GitHub"
+    Write-Host "  OK - Synced with GitHub"
 }
 
 Write-Host ""
-Write-Host "[4/5] Push to Gitee..."
+Write-Host "[4/5] Sync Gitee..."
+git pull gitee master --rebase 2>$null
 git push gitee master 2>$null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  Warning: Gitee push failed"
 } else {
-    Write-Host "  OK - Pushed to Gitee"
+    Write-Host "  OK - Synced with Gitee"
 }
 
 Write-Host ""
