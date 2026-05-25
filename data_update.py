@@ -18,15 +18,36 @@ def get_latest_price():
     """从中国农业信息网获取最新价格"""
     print("正在获取最新价格数据...")
 
-    # 最新几周的数据页面
-    urls = [
-        'http://www.agri.cn/sj/jcyj/202605/t20260509_8834182.htm',  # 4月第5周
-        'http://www.agri.cn/sj/jcyj/202605/t20260509_8834183.htm',  # 4月第4周
-    ]
+    # 先获取最新数据列表页面
+    list_url = 'http://www.agri.cn/sj/jcyj/'
+    urls = []
+
+    try:
+        resp = requests.get(list_url, headers=headers, timeout=30)
+        if resp.status_code == 200:
+            resp.encoding = 'utf-8'
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            # 提取所有5月的畜产品价格页面链接
+            for link in soup.find_all('a', href=True):
+                href = link['href']
+                if '202605/t202605' in href and 'jcyj' in href:
+                    full_url = 'http://www.agri.cn/sj/jcyj/' + href.replace('./', '')
+                    if full_url not in urls:
+                        urls.append(full_url)
+    except Exception as e:
+        print(f"  ✗ 获取列表失败: {str(e)[:50]}")
+
+    # 如果没找到，使用备用URL列表
+    if not urls:
+        urls = [
+            'http://www.agri.cn/sj/jcyj/202605/t20260520_8837884.htm',
+            'http://www.agri.cn/sj/jcyj/202605/t20260514_8836323.htm',
+            'http://www.agri.cn/sj/jcyj/202605/t20260509_8834182.htm',
+        ]
 
     all_data = []
 
-    for url in urls:
+    for url in urls[:5]:  # 最多取5个
         try:
             resp = requests.get(url, headers=headers, timeout=30)
             if resp.status_code == 200:
@@ -74,7 +95,6 @@ def get_latest_price():
 
                     # 同比环比
                     if '活牛' in text:
-                        # 提取活牛同比环比
                         match = re.search(r'活牛价格.*?同比(.[+-]?\d+\.?\d*%).*?环比(.[+-]?\d+\.?\d*%)', text)
                         if match:
                             data['活牛同比'] = match.group(1)
