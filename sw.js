@@ -1,32 +1,27 @@
-const CACHE_NAME = 'henan-cattle-v1';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json'
-];
+const CACHE_NAME = 'henan-cattle-v2';
 
 // 安装Service Worker
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
-  );
   self.skipWaiting();
 });
 
-// 监听网络请求
+// 监听网络请求 - 优先从网络获取最新内容
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then(response => {
-        // 如果找到缓存，返回缓存
-        if (response) {
-          return response;
+        // 网络成功，返回并缓存一份
+        if (response.ok) {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseClone);
+          });
         }
-        return fetch(event.request);
+        return response;
+      })
+      .catch(() => {
+        // 网络失败，从缓存获取
+        return caches.match(event.request);
       })
   );
 });
@@ -42,6 +37,6 @@ self.addEventListener('activate', event => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
 });
