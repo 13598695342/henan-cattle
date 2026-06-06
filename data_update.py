@@ -176,11 +176,17 @@ def save_data_json(data_list):
     print(f"  ✓ 数据已保存: {output_path}")
 
 def push_to_wechat(data_list):
-    """通过企业微信群机器人推送到微信"""
+    """通过微信测试号模板消息推送到微信"""
     if not data_list:
         return
 
-    webhook_url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=854fa99f-2d73-47f5-b37f-e250d20100a8"
+    app_id = "wx3d02b3e72c61696c"
+    app_secret = "0527702158b3fdd52a02764f82f797c9"
+    template_id = "IxRvXwzNwCvYR0upGcTIbx-dwVqmhcWhAgaLhztexGg"
+    # 接收人列表（添加朋友openid到列表即可群发）
+    openids = [
+        "oPxx82-de0mikhzZAy39LJ3WYOXA",
+    ]
 
     latest = data_list[0]
     previous = data_list[1] if len(data_list) > 1 else None
@@ -196,44 +202,52 @@ def push_to_wechat(data_list):
         else:
             trend_text = "→持平"
 
-    date_str = latest.get('日期', '--')
-    cow_price = latest.get('活牛价格', '--')
-    beef_price = latest.get('牛肉价格', '--')
-    sheep_price = latest.get('羊肉价格', '--')
-    pig_price = latest.get('猪肉价格', '--')
-    egg_price = latest.get('鸡蛋价格', '--')
-
-    content = f"【河南牛价更新】{date_str}\n\n"
-    content += f"🐄 活牛：{cow_price} 元/公斤 {trend_text}\n"
-    content += f"🥩 牛肉：{beef_price} 元/公斤\n"
-    content += f"🐑 羊肉：{sheep_price} 元/公斤\n"
-    content += f"🐖 猪肉：{pig_price} 元/公斤\n"
-    content += f"🥚 鸡蛋：{egg_price} 元/公斤\n"
-
-    if previous:
-        content += f"\n上周对比（{previous.get('日期', '--')}）：\n"
-        content += f"活牛：{previous.get('活牛价格', '--')} → {cow_price} 元/公斤\n"
-
-    content += f"\n🌐 https://dulcet-daifuku-4f5ffe.netlify.app/"
-    content += f"\n更新时间：{datetime.now().strftime('%Y-%m-%d %H:%M')}"
-
-    payload = {
-        "msgtype": "text",
-        "text": {
-            "content": content
-        }
-    }
-
-    print("\n正在推送到企业微信群...")
+    print("\n正在获取access_token...")
     try:
-        resp = requests.post(webhook_url, json=payload, timeout=30)
-        result = resp.json()
-        if result.get('errcode') == 0:
-            print(f"  ✓ 推送成功")
-        else:
-            print(f"  ✗ 推送失败: {result.get('errmsg', '未知错误')}")
+        token_resp = requests.get(
+            f"https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={app_id}&secret={app_secret}",
+            timeout=30
+        )
+        token_result = token_resp.json()
+        if 'access_token' not in token_result:
+            print(f"  ✗ 获取token失败: {token_result.get('errmsg', '未知错误')}")
+            return
+        access_token = token_result['access_token']
     except Exception as e:
-        print(f"  ✗ 推送异常: {str(e)[:100]}")
+        print(f"  ✗ 获取token异常: {str(e)[:100]}")
+        return
+
+    now = datetime.now().strftime('%Y-%m-%d %H:%M')
+
+    sent_count = 0
+    for openid in openids:
+        data = {
+            "touser": openid,
+            "template_id": template_id,
+            "data": {
+                "date": {"value": latest.get('日期', '--')},
+                "cowPrice": {"value": f"{latest.get('活牛价格', '--')} 元/公斤"},
+                "beefPrice": {"value": f"{latest.get('牛肉价格', '--')} 元/公斤"},
+                "trend": {"value": trend_text if trend_text else "暂无数据"},
+                "updateTime": {"value": now},
+            }
+        }
+        try:
+            push_resp = requests.post(
+                f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={access_token}",
+                json=data,
+                timeout=30
+            )
+            result = push_resp.json()
+            if result.get('errcode') == 0:
+                sent_count += 1
+            else:
+                print(f"  ✗ 推送给 {openid[:8]}... 失败: {result.get('errmsg', '未知错误')}")
+        except Exception as e:
+            print(f"  ✗ 推送异常: {str(e)[:100]}")
+
+    if sent_count > 0:
+        print(f"  ✓ 已推送 {sent_count}/{len(openids)} 人")
 
 def main():
     print("=" * 50)
