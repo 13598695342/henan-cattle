@@ -175,6 +175,71 @@ def save_data_json(data_list):
 
     print(f"  ✓ 数据已保存: {output_path}")
 
+def push_to_wechat(data_list):
+    """通过 Server酱 推送到微信"""
+    if not data_list:
+        return
+
+    sendkey = "SCT360337Tqc5SFF7v5QzEVlvmS8j5Qvjc"
+    url = f"https://sctapi.ftqq.com/{sendkey}.send"
+
+    latest = data_list[0]
+    previous = data_list[1] if len(data_list) > 1 else None
+
+    # 计算涨跌
+    trend_text = ""
+    if previous and latest.get('活牛价格') and previous.get('活牛价格'):
+        diff = float(latest['活牛价格']) - float(previous['活牛价格'])
+        if diff > 0:
+            trend_text = f" ↑ +{diff:.2f}"
+        elif diff < 0:
+            trend_text = f" ↓ {diff:.2f}"
+        else:
+            trend_text = " → 持平"
+
+    title = f"河南牛价更新 {latest.get('活牛价格', '--')}元/公斤{trend_text}"
+
+    content = f"""## 📊 河南牛价行情
+
+**数据周期**：{latest.get('日期', '--')}
+
+| 品类 | 价格（元/公斤） |
+|------|---------------|
+| 🐄 活牛 | **{latest.get('活牛价格', '--')}**{trend_text} |
+| 🥩 牛肉 | {latest.get('牛肉价格', '--')} |
+| 🐑 羊肉 | {latest.get('羊肉价格', '--')} |
+| 🐖 猪肉 | {latest.get('猪肉价格', '--')} |
+| 🥚 鸡蛋 | {latest.get('鸡蛋价格', '--')} |
+
+---
+"""
+
+    if previous:
+        content += f"""
+**上周对比**（{previous.get('日期', '--')}）：
+- 活牛：{previous.get('活牛价格', '--')} 元/公斤
+- 牛肉：{previous.get('牛肉价格', '--')} 元/公斤
+
+---
+"""
+
+    content += f"""
+🌐 [查看网站](https://dulcet-daifuku-4f5ffe.netlify.app/)
+
+更新时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+"""
+
+    print("\n正在推送到微信...")
+    try:
+        resp = requests.post(url, data={'title': title, 'desp': content}, timeout=30)
+        result = resp.json()
+        if result.get('code') == 0:
+            print(f"  ✓ 推送成功")
+        else:
+            print(f"  ✗ 推送失败: {result.get('message', '未知错误')}")
+    except Exception as e:
+        print(f"  ✗ 推送异常: {str(e)[:100]}")
+
 def main():
     print("=" * 50)
     print("河南牛业数据自动更新工具")
@@ -193,6 +258,10 @@ def main():
     # 4. 更新网站
     if price_data:
         update_website(price_data)
+
+    # 5. 推送到微信
+    if price_data:
+        push_to_wechat(price_data)
 
     print()
     print("=" * 50)
