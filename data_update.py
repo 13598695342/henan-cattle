@@ -226,8 +226,8 @@ def push_to_wechat(data_list):
             "template_id": template_id,
             "data": {
                 "date": {"value": latest.get('日期', '--')},
-                "cowPrice": {"value": f"{latest.get('活牛价格', '--')} 元/公斤"},
-                "beefPrice": {"value": f"{latest.get('牛肉价格', '--')} 元/公斤"},
+                "cowPrice": {"value": f"{latest.get('活牛价格', '--')}"},
+                "beefPrice": {"value": f"{latest.get('牛肉价格', '--')}"},
                 "trend": {"value": trend_text if trend_text else "暂无数据"},
                 "updateTime": {"value": now},
             }
