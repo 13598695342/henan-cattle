@@ -176,12 +176,11 @@ def save_data_json(data_list):
     print(f"  ✓ 数据已保存: {output_path}")
 
 def push_to_wechat(data_list):
-    """通过 Server酱 推送到微信"""
+    """通过企业微信群机器人推送到微信"""
     if not data_list:
         return
 
-    sendkey = "SCT360337Tqc5SFF7v5QzEVlvmS8j5Qvjc"
-    url = f"https://sctapi.ftqq.com/{sendkey}.send"
+    webhook_url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=854fa99f-2d73-47f5-b37f-e250d20100a8"
 
     latest = data_list[0]
     previous = data_list[1] if len(data_list) > 1 else None
@@ -191,52 +190,48 @@ def push_to_wechat(data_list):
     if previous and latest.get('活牛价格') and previous.get('活牛价格'):
         diff = float(latest['活牛价格']) - float(previous['活牛价格'])
         if diff > 0:
-            trend_text = f" ↑ +{diff:.2f}"
+            trend_text = f"↑+{diff:.2f}"
         elif diff < 0:
-            trend_text = f" ↓ {diff:.2f}"
+            trend_text = f"↓{diff:.2f}"
         else:
-            trend_text = " → 持平"
+            trend_text = "→持平"
 
-    title = f"河南牛价更新 {latest.get('活牛价格', '--')}元/公斤{trend_text}"
+    date_str = latest.get('日期', '--')
+    cow_price = latest.get('活牛价格', '--')
+    beef_price = latest.get('牛肉价格', '--')
+    sheep_price = latest.get('羊肉价格', '--')
+    pig_price = latest.get('猪肉价格', '--')
+    egg_price = latest.get('鸡蛋价格', '--')
 
-    content = f"""## 📊 河南牛价行情
-
-**数据周期**：{latest.get('日期', '--')}
-
-| 品类 | 价格（元/公斤） |
-|------|---------------|
-| 🐄 活牛 | **{latest.get('活牛价格', '--')}**{trend_text} |
-| 🥩 牛肉 | {latest.get('牛肉价格', '--')} |
-| 🐑 羊肉 | {latest.get('羊肉价格', '--')} |
-| 🐖 猪肉 | {latest.get('猪肉价格', '--')} |
-| 🥚 鸡蛋 | {latest.get('鸡蛋价格', '--')} |
-
----
-"""
+    content = f"【河南牛价更新】{date_str}\n\n"
+    content += f"🐄 活牛：{cow_price} 元/公斤 {trend_text}\n"
+    content += f"🥩 牛肉：{beef_price} 元/公斤\n"
+    content += f"🐑 羊肉：{sheep_price} 元/公斤\n"
+    content += f"🐖 猪肉：{pig_price} 元/公斤\n"
+    content += f"🥚 鸡蛋：{egg_price} 元/公斤\n"
 
     if previous:
-        content += f"""
-**上周对比**（{previous.get('日期', '--')}）：
-- 活牛：{previous.get('活牛价格', '--')} 元/公斤
-- 牛肉：{previous.get('牛肉价格', '--')} 元/公斤
+        content += f"\n上周对比（{previous.get('日期', '--')}）：\n"
+        content += f"活牛：{previous.get('活牛价格', '--')} → {cow_price} 元/公斤\n"
 
----
-"""
+    content += f"\n🌐 https://dulcet-daifuku-4f5ffe.netlify.app/"
+    content += f"\n更新时间：{datetime.now().strftime('%Y-%m-%d %H:%M')}"
 
-    content += f"""
-🌐 [查看网站](https://dulcet-daifuku-4f5ffe.netlify.app/)
+    payload = {
+        "msgtype": "text",
+        "text": {
+            "content": content
+        }
+    }
 
-更新时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-"""
-
-    print("\n正在推送到微信...")
+    print("\n正在推送到企业微信群...")
     try:
-        resp = requests.post(url, data={'title': title, 'desp': content}, timeout=30)
+        resp = requests.post(webhook_url, json=payload, timeout=30)
         result = resp.json()
-        if result.get('code') == 0:
+        if result.get('errcode') == 0:
             print(f"  ✓ 推送成功")
         else:
-            print(f"  ✗ 推送失败: {result.get('message', '未知错误')}")
+            print(f"  ✗ 推送失败: {result.get('errmsg', '未知错误')}")
     except Exception as e:
         print(f"  ✗ 推送异常: {str(e)[:100]}")
 
