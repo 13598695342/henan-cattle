@@ -14,6 +14,15 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
 }
 
+# 日志文件
+LOG_FILE = os.path.join(os.path.dirname(__file__), 'push_log.txt')
+
+def log(msg):
+    """同时输出到屏幕和日志文件"""
+    print(msg)
+    with open(LOG_FILE, 'a', encoding='utf-8') as f:
+        f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
+
 def get_latest_price():
     """从中国农业信息网获取最新价格"""
     print("正在获取最新价格数据...")
@@ -174,6 +183,7 @@ def save_data_json(data_list):
         json.dump(save_data, f, ensure_ascii=False, indent=2)
 
     print(f"  ✓ 数据已保存: {output_path}")
+    log(f"  ✓ 数据已保存")
 
 def push_to_wechat(data_list):
     """通过微信测试号模板消息推送到微信"""
@@ -202,7 +212,7 @@ def push_to_wechat(data_list):
         else:
             trend_text = "→持平"
 
-    print("\n正在获取access_token...")
+    log("\n正在获取access_token...")
     try:
         token_resp = requests.get(
             f"https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={app_id}&secret={app_secret}",
@@ -210,11 +220,11 @@ def push_to_wechat(data_list):
         )
         token_result = token_resp.json()
         if 'access_token' not in token_result:
-            print(f"  ✗ 获取token失败: {token_result.get('errmsg', '未知错误')}")
+            log(f"  ✗ 获取token失败: {token_result.get('errmsg', '未知错误')}")
             return
         access_token = token_result['access_token']
     except Exception as e:
-        print(f"  ✗ 获取token异常: {str(e)[:100]}")
+        log(f"  ✗ 获取token异常: {str(e)[:100]}")
         return
 
     now = datetime.now().strftime('%Y-%m-%d %H:%M')
@@ -242,12 +252,12 @@ def push_to_wechat(data_list):
             if result.get('errcode') == 0:
                 sent_count += 1
             else:
-                print(f"  ✗ 推送给 {openid[:8]}... 失败: {result.get('errmsg', '未知错误')}")
+                log(f"  ✗ 推送给 {openid[:8]}... 失败: {result.get('errmsg', '未知错误')}")
         except Exception as e:
-            print(f"  ✗ 推送异常: {str(e)[:100]}")
+            log(f"  ✗ 推送异常: {str(e)[:100]}")
 
     if sent_count > 0:
-        print(f"  ✓ 已推送 {sent_count}/{len(openids)} 人")
+        log(f"  ✓ 已推送 {sent_count}/{len(openids)} 人")
 
 def main():
     print("=" * 50)
