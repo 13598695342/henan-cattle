@@ -36,22 +36,23 @@ def get_latest_price():
         if resp.status_code == 200:
             resp.encoding = 'utf-8'
             soup = BeautifulSoup(resp.text, 'html.parser')
-            # 提取所有5月的畜产品价格页面链接
+            # 提取最近几个月的畜产品价格页面链接（202607, 202606, 202605等）
             for link in soup.find_all('a', href=True):
                 href = link['href']
-                if '202605/t202605' in href and 'jcyj' in href:
+                # 匹配近3个月的畜产品价格页面
+                if any(month in href for month in ['202607/', '202606/', '202605/']) and 't2026' in href and 'jcyj' in href:
                     full_url = 'http://www.agri.cn/sj/jcyj/' + href.replace('./', '')
                     if full_url not in urls:
                         urls.append(full_url)
     except Exception as e:
         print(f"  ✗ 获取列表失败: {str(e)[:50]}")
 
-    # 如果没找到，使用备用URL列表
+    # 如果没找到，使用最新备用URL
     if not urls:
         urls = [
-            'http://www.agri.cn/sj/jcyj/202605/t20260520_8837884.htm',
-            'http://www.agri.cn/sj/jcyj/202605/t20260514_8836323.htm',
-            'http://www.agri.cn/sj/jcyj/202605/t20260509_8834182.htm',
+            'http://www.agri.cn/sj/jcyj/202607/t20260730_8859562.htm',
+            'http://www.agri.cn/sj/jcyj/202607/t20260722_8856439.htm',
+            'http://www.agri.cn/sj/jcyj/202606/t20260620_8848323.htm',
         ]
 
     all_data = []
